@@ -1,4 +1,4 @@
-*.png
+# *.png
 .idea
 **/*.png
 __pycache__
