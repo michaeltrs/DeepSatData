@@ -1,0 +1,11 @@
+*.png
+.idea
+**/*.png
+__pycache__
+**/__pycache__
+*.pyc
+**/*.pyc
+misc
+**/pw.csv
+pw.csv
+**/.ipynb_checkpoints
