@@ -42,7 +42,7 @@ ground_truth,crs,year,geometry
 ``` 
 
 Specifically for 
-[RPG]{https://www.data.gouv.fr/en/datasets/registre-parcellaire-graphique-rpg-contours-des-parcelles-et-ilots-culturaux-et-leur-groupe-de-cultures-majoritaire/} 
+[RPG](https://www.data.gouv.fr/en/datasets/registre-parcellaire-graphique-rpg-contours-des-parcelles-et-ilots-culturaux-et-leur-groupe-de-cultures-majoritaire/) 
 crop type data for France, the following can be used the following to transform .shp files to canonical .csv:
 ```shell
 python dataset/France_RPG/RPG2DF.py --rpg-dir <RPG files parent directory>
@@ -78,18 +78,10 @@ sh dataset/unlabelled/make_unlabelled_dataset.sh <1:products_dir> <2:windows_dir
 <4:res> <5:sample_size> <6:num_processes> <7:anchor (optional)>  
 ```
 where:
-- products_dir: directory path for downloaded Sentinel products
-- windows_dir: directory to save extracted image windows
-- timeseries_dir: directory to ave final timeseries objects
-- res: highest resolution of satellite image bands, 10 (m) for Sentinel-2
-- sample_size: number of pixels of final image windows (for highest resolution image band) and ground truths
-- num_processes: number of processes to run on parallel
-- anchor: 
- 
-
-## TODO
-- [] replace float64 saved data with other dtype
-- [x] script to compile a list of downloaded products in dir
-- [x] download from saved .csv instead of querying every time
-- [] script to find additional data apart from those in saved .csv
-- [] script to find tileids for AOI
+- products_dir: (str) directory path for downloaded Sentinel products
+- windows_dir: (str) directory to save extracted image windows
+- timeseries_dir: (str) directory to ave final timeseries objects
+- res: (int) highest resolution of satellite image bands, 10 (m) for Sentinel-2
+- sample_size: (int) number of pixels of final image windows (for highest resolution image band) and ground truths
+- num_processes: (int) number of processes to run on parallel
+- anchor: (list) (N,W,CRS) coordinates of an anchor point and CRS to use as a corner for extracting windows (optional)

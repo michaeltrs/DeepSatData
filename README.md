@@ -1,5 +1,5 @@
 # DeepSatData: make datasets of Sentinel images for training machine learning models
-![image info](./diagram.png)
+![alt text](./diagram.png)
 DeepSatData is a toolkit for making datasets from satellite imagery suitable for training machine learning models. 
 The process is split into two distinct parts:
 - identifying and downloading relevant Sentinel products for an area and time period of interest. Read more in  [download](./download)
