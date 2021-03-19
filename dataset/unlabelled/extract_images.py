@@ -18,12 +18,22 @@ from utils.multiprocessing_utils import run_pool
 from utils.sentinel_products_utils import get_S2prod_info
 
 
-mult = {'B01': 1/6.,'B02': 1., 'B03': 1., 'B04': 1., 'B05': 1./2., 'B06': 1./2., 'B07': 1./2., 'B08': 1., 'B8A': 1./2,
+mult = {'B01': 1/6., 'B02': 1., 'B03': 1., 'B04': 1., 'B05': 1./2., 'B06': 1./2., 'B07': 1./2., 'B08': 1., 'B8A': 1./2,
         'B09': 1./6., 'B10': 1./6., 'B11': 1./2., 'B12': 1./2.}
-jp2s = ["%s.jp2" % i for i in mult.keys()]
+# jp2s = ["%s.jp2" % i for i in mult.keys()]
 
 
 def extract_images(imdirs):
+
+    jp2s = ["%s.jp2" % i for i in bands]
+    # print('jp2s: ', jp2s)
+
+    refband = None
+    for band in bands:
+        if mult[band] == 1.0:
+            refband = band
+            break
+    assert refband is not None, "in curerent implementation at least one 10m band should be included"
 
     saved_files_info = []
 
@@ -53,8 +63,8 @@ def extract_images(imdirs):
             Wp, Np = np.array(f.transform)[2], np.array(f.transform)[5]
             dN = dW = 0
 
-        num_rows = (data['B02'].shape[0] * 10 - dN) / (sample_size * res)
-        num_cols = (data['B02'].shape[0] * 10 - dW) / (sample_size * res)
+        num_rows = (data[refband].shape[0] * 10 - dN) / (sample_size * res)
+        num_cols = (data[refband].shape[0] * 10 - dW) / (sample_size * res)
 
         prod_savedir = os.path.join(savedir, imdir.split("/")[-4].split(".")[0])
         if not os.path.exists(prod_savedir):
@@ -89,9 +99,11 @@ def extract_images(imdirs):
                 saved_files_info.append(
                     [sample_save_path, Nij, Wij, Np, Wp, i, j, ip, jp, sample_size, sample_size, date, imdir, "ok"])
 
+
     df = pd.DataFrame(data=saved_files_info,
                       columns=['sample_path', 'Nij', 'Wij', 'Np', 'Wp', 'il', 'jl', 'ip', 'jp',
                                'height', 'width', 'Date', 'S2_prod_imdir', "comment"])
+    print('returned')
     return df
 
 
@@ -114,6 +126,7 @@ def main():
 
         out.append(pd.concat(df_year))
 
+
     df = pd.concat(out).reset_index(drop=True)
     df.to_csv(os.path.join(savedir, "extracted_windows_data_info.csv"), index=False)
 
@@ -122,19 +135,27 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
     parser.add_argument('--products_dir', help='directory containing sentinel products')
+    parser.add_argument('--bands', default=None, help='which satellite image bands to use')
     parser.add_argument('--savedir', help='save directory to extract ground truths in raster mode')
     parser.add_argument('--res', default=10, help='pixel size in meters')
     parser.add_argument('--anchor', default=None, help='anchor point for grid (N, W, crs)')
     parser.add_argument('--sample_size', default=24, help='spatial resolution of dataset samples')
     parser.add_argument('--num_processes', default=4, help='number of parallel processes')
+    # ---------------------------------------------------------------------------------------------
+
     args = parser.parse_args()
     products_dir = args.products_dir
+    bands = args.bands
+    if bands == 'None':
+        bands = list(mult.keys())
+    else:
+        bands = bands.split(',')
     savedir = args.savedir
     res = int(args.res)
     sample_size = int(args.sample_size)
     num_processes = int(args.num_processes)
     anchor = args.anchor
-    if anchor == "None":
+    if anchor == 'None':
         anchor = None
     else:
         anchor = [int(i) for i in anchor.split(",")]

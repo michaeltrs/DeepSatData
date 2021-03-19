@@ -1,16 +1,32 @@
 #!/usr/bin/env bash
 
-products_dir=$1
-windows_dir=$2
-timeseries_dir=$3
-res=$4
-sample_size=$5
-num_processes=$6
-anchor=${7:-"None"}
+anchor='None'
+bands='None'
+for ARGUMENT in "$@"
+do
 
-# 1:products_dir, 2:windows_dir, 3:timeseries_dir, 4:res, 5:sample_size, 6:num_processes, 7:anchor,
+    KEY=$(echo $ARGUMENT | cut -f1 -d=)
+    VALUE=$(echo $ARGUMENT | cut -f2 -d=)
+
+    case "$KEY" in
+#            steps)   steps=${VALUE} ;;
+#            vals)    vals=${VALUE} ;;
+          products_dir)     products_dir=${VALUE} ;;
+          windows_dir)      windows_dir=${VALUE} ;;
+          timeseries_dir)   timeseries_dir=${VALUE} ;;
+          res)              res=${VALUE} ;;
+          sample_size)      sample_size=${VALUE} ;;
+          num_processes)    num_processes=${VALUE} ;;
+          anchor)           anchor=${VALUE} ;;
+          bands)            bands=${VALUE} ;;
+            *)
+    esac
+
+done
+
 
 python dataset/unlabelled/extract_images.py --products_dir $products_dir \
+                                       --bands $bands \
                                        --savedir $windows_dir \
                                        --anchor $anchor \
                                        --res $res \
@@ -19,6 +35,7 @@ python dataset/unlabelled/extract_images.py --products_dir $products_dir \
 
 python dataset/unlabelled/make_image_timeseries.py --windows_dir $windows_dir \
                                               --savedir $timeseries_dir \
+                                              --bands $bands \
                                               --res $res \
                                               --sample_size $sample_size \
                                               --num_processes $num_processes
