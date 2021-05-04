@@ -11,7 +11,7 @@ import pickle
 if __name__ == "__main__" and __package__ is None:
     from sys import path
     from os.path import dirname as dir
-    path.append(dir(dir(path[0])))
+    path.insert(0, dir(dir(path[0])))
     __package__ = "examples"
 from utils.geospatial_data_utils import GeoTransform
 from utils.multiprocessing_utils import run_pool
@@ -20,7 +20,6 @@ from utils.sentinel_products_utils import get_S2prod_info
 
 mult = {'B01': 1/6., 'B02': 1., 'B03': 1., 'B04': 1., 'B05': 1./2., 'B06': 1./2., 'B07': 1./2., 'B08': 1., 'B8A': 1./2,
         'B09': 1./6., 'B10': 1./6., 'B11': 1./2., 'B12': 1./2.}
-# jp2s = ["%s.jp2" % i for i in mult.keys()]
 
 
 def extract_images(imdirs):
@@ -99,11 +98,10 @@ def extract_images(imdirs):
                 saved_files_info.append(
                     [sample_save_path, Nij, Wij, Np, Wp, i, j, ip, jp, sample_size, sample_size, date, imdir, "ok"])
 
-
+    print('process finished')
     df = pd.DataFrame(data=saved_files_info,
                       columns=['sample_path', 'Nij', 'Wij', 'Np', 'Wp', 'il', 'jl', 'ip', 'jp',
                                'height', 'width', 'Date', 'S2_prod_imdir', "comment"])
-    print('returned')
     return df
 
 
@@ -126,7 +124,7 @@ def main():
 
         out.append(pd.concat(df_year))
 
-
+    print('pool finished')
     df = pd.concat(out).reset_index(drop=True)
     df.to_csv(os.path.join(savedir, "extracted_windows_data_info.csv"), index=False)
 
@@ -135,8 +133,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
     parser.add_argument('--products_dir', help='directory containing sentinel products')
-    parser.add_argument('--bands', default=None, help='which satellite image bands to use')
     parser.add_argument('--savedir', help='save directory to extract ground truths in raster mode')
+    parser.add_argument('--bands', default=None, help='which satellite image bands to use')
     parser.add_argument('--res', default=10, help='pixel size in meters')
     parser.add_argument('--anchor', default=None, help='anchor point for grid (N, W, crs)')
     parser.add_argument('--sample_size', default=24, help='spatial resolution of dataset samples')
@@ -144,16 +142,25 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------------------------------
 
     args = parser.parse_args()
+
     products_dir = args.products_dir
+
     bands = args.bands
     if bands == 'None':
         bands = list(mult.keys())
     else:
         bands = bands.split(',')
+
     savedir = args.savedir
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
+
     res = int(args.res)
+
     sample_size = int(args.sample_size)
+
     num_processes = int(args.num_processes)
+
     anchor = args.anchor
     if anchor == 'None':
         anchor = None

@@ -10,7 +10,7 @@ from multiprocessing import Pool
 if __name__ == "__main__" and __package__ is None:
     from sys import path
     from os.path import dirname as dir
-    path.append(dir(dir(path[0])))
+    path.insert(0, dir(dir(path[0])))
     __package__ = "examples"
 from utils.date_utils import get_doy
 from utils.multiprocessing_utils import split_num_segments
@@ -134,11 +134,19 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------------------------------
 
     args = parser.parse_args()
+
     windows_dir = args.windows_dir
+
     savedir = args.savedir
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
+
     res = int(args.res)
+
     sample_size = int(args.sample_size)
+
     num_processes = int(args.num_processes)
+
     bands = args.bands
     if bands == 'None':
         bands = list(mult.keys())

@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from shapely.geometry import Polygon
 from pyproj import Proj, transform
+import re 
 
 
 class GeoTransform:
@@ -22,6 +24,58 @@ class GeoTransform:
         if self.loc2loc:
             return yout, xout
         return xout, yout
+
+
+def make_AOI(coords, transform):
+    if type(coords) == str:
+        x = [float(x) for x in re.findall("[+-]?\d+(?:\.\d+)?", coords)]
+        x = np.array(x).reshape(-1, 2)
+
+        points = []
+        for point in x:
+            points.append(transform(point[0], point[1]))
+        points.append(transform(x[0][0], x[0][1]))
+
+        poly = make_poly(points[:-1])
+        footprint = coords
+        AOI = Polygon(points)
+
+    elif type(coords) in [list, tuple]:
+        if len(coords) == 2:  # assume NW, SE boxx coords
+            NW, SE = coords
+            NW_glob = transform(NW[1], NW[0])
+            SE_glob = transform(SE[1], SE[0])
+
+            poly = make_rect_poly(NW_glob, SE_glob)
+            footprint = geojson_to_wkt(poly)
+            AOI = Polygon([[NW_glob[1], NW_glob[0]],
+                           [NW_glob[1], SE_glob[0]],
+                           [SE_glob[1], SE_glob[0]],
+                           [SE_glob[1], NW_glob[0]],
+                           [NW_glob[1], NW_glob[0]]])
+
+        else:
+            points = []
+            for point in coords:
+                points.append(transform(point[0], point[1]))
+            points.append(transform(x[0][0], x[0][1]))
+
+            poly = make_poly(points[:-1])
+            footprint = geojson_to_wkt(poly)
+            AOI = Polygon(points)
+    
+    return poly, footprint, AOI
+
+
+def make_poly(points, ret_points=False):
+    points.append(points[0])
+    poly = {"type": "FeatureCollection",
+            "features": [{"type": "Feature", "properties": {}, "geometry": {
+                "type": "Polygon",
+                "coordinates": [[points]]} }]}
+    if ret_points:
+        return poly['features'][0]['geometry']['coordinates']
+    return poly
 
 
 def make_rect_poly(nw, se, ret_points=False):

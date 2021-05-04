@@ -8,7 +8,7 @@ from multiprocessing import Pool
 if __name__ == "__main__" and __package__ is None:
     from sys import path
     from os.path import dirname as dir
-    path.append(dir(dir(path[0])))
+    path.insert(0, dir(dir(path[0])))
     __package__ = "examples"
 from utils.geospatial_data_utils import GeoTransform, get_points_from_str_poly
 from utils.multiprocessing_utils import split_df
@@ -236,18 +236,23 @@ if __name__ == "__main__":
     parser.add_argument('--res', default=10, help='pixel size in meters')
     parser.add_argument('--sample_size', default=24, help='spatial resolution of dataset samples')
     parser.add_argument('--num_processes', default=4, help='number of parallel processes')
+
     args = parser.parse_args()
+
     ground_truths_file = args.ground_truths_file
+
     products_dir = args.products_dir
+
     savedir = args.savedir
+    print("savedir: ", savedir)
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
+
     res = int(args.res)
+
     sample_size = int(args.sample_size)
+
     num_processes = int(args.num_processes)
 
-    # CODE ------------------------------------------------------------------------------------------------------------#
-    print("savedir: ", savedir)
-
-    if not os.path.isdir(savedir):
-        os.makedirs(savedir)
 
     main()

@@ -18,7 +18,7 @@ products_file = args.products_file
 # CODE -----------------------------------------------------------------------------------------------------------------
 # authentication
 cred = pd.read_csv("download/pw.csv", header=None)
-api = SentinelAPI(cred[0][0], cred[0][1])
+api = SentinelAPI(cred[0][0], cred[0][1], 'https://scihub.copernicus.eu/dhus')
 
 # read products to download from file
 if ',' in products_file:

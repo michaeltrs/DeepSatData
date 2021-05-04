@@ -52,8 +52,8 @@ python dataset/France_RPG/RPG2DF.py --rpg-dir <RPG files parent directory>
 Run the following bash script to generate data corresponding to spatial locations for which there are available ground 
 truths in the form of parcel polygons. 
 ```shell
-sh dataset/labelled_dense/make_labelled_dataset.sh <1:ground_truths_file> <2:products_dir> <3:labels_dir> <4:windows_dir> <5:timeseries_dir> 
-<6:res> <7:sample_size> <8:num_processes> 
+sh dataset/labelled_dense/make_labelled_dataset.sh ground_truths_file=<1:ground_truths_file> products_dir=<2:products_dir> labels_dir=<3:labels_dir> windows_dir=<4:windows_dir> timeseries_dir=<5:timeseries_dir> 
+res=<6:res> sample_size=<7:sample_size> num_processes<8:num_processes> bands=<8:bands (optional)>
 ```
 where:
 - ground_truths_file: file path for canonical .csv file as defined above
@@ -64,6 +64,7 @@ where:
 - res: highest resolution of satellite image bands, 10 (m) for Sentinel-2
 - sample_size: number of pixels of final image windows (for highest resolution image band) and ground truths
 - num_processes: number of processes to run on parallel
+- bands: (list) which satellite image bands to use, e.g. 'B02,B03,B04,...'. If not specified all bands are used (optional) 
 
 ## Without ground truth data
 In this case we only need to provide the directory where Sentinel products are downloaded. Optionally we can provide an 
@@ -74,8 +75,8 @@ anchor will be placed at a vertex of the constructed grid.
 Run the following bash script to generate data corresponding to spatial locations for which there are available ground 
 truths in the form of parcel polygons. 
 ```shell
-sh dataset/unlabelled/make_unlabelled_dataset.sh <1:products_dir> <2:windows_dir> <3:timeseries_dir> 
-<4:res> <5:sample_size> <6:num_processes> <7:anchor (optional)>  
+sh dataset/unlabelled/make_unlabelled_dataset.sh products_dir=<1:products_dir> windows_dir=<2:windows_dir> timeseries_dir=<3:timeseries_dir> res=<4:res> 
+sample_size=<5:sample_size> num_processes=<6:num_processes> anchor=<7:anchor (optional)> bands=<8:bands (optional)> 
 ```
 where:
 - products_dir: (str) directory path for downloaded Sentinel products
@@ -85,3 +86,4 @@ where:
 - sample_size: (int) number of pixels of final image windows (for highest resolution image band) and ground truths
 - num_processes: (int) number of processes to run on parallel
 - anchor: (list) (N,W,CRS) coordinates of an anchor point and CRS to use as a corner for extracting windows (optional)
+- bands: (list) which satellite image bands to use, e.g. 'B02,B03,B04,...'. If not specified all bands are used (optional) 

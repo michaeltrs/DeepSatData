@@ -9,8 +9,7 @@ do
     VALUE=$(echo $ARGUMENT | cut -f2 -d=)
 
     case "$KEY" in
-#            steps)   steps=${VALUE} ;;
-#            vals)    vals=${VALUE} ;;
+
           products_dir)     products_dir=${VALUE} ;;
           windows_dir)      windows_dir=${VALUE} ;;
           timeseries_dir)   timeseries_dir=${VALUE} ;;

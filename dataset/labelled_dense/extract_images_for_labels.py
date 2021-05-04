@@ -11,7 +11,7 @@ import pickle
 if __name__ == "__main__" and __package__ is None:
     from sys import path
     from os.path import dirname as dir
-    path.append(dir(dir(path[0])))
+    path.insert(0, dir(dir(path[0])))
     __package__ = "examples"
 from utils.data_utils import find_number
 from utils.geospatial_data_utils import GeoTransform
@@ -21,10 +21,12 @@ from utils.sentinel_products_utils import get_S2prod_info
 
 mult = {'B01': 1/6.,'B02': 1., 'B03': 1., 'B04': 1., 'B05': 1./2., 'B06': 1./2., 'B07': 1./2., 'B08': 1., 'B8A': 1./2,
         'B09': 1./6., 'B10': 1./6., 'B11': 1./2., 'B12': 1./2.}
-jp2s = ["%s.jp2" % i for i in mult.keys()]
+# jp2s = ["%s.jp2" % i for i in mult.keys()]
 
 
 def extract_images(imdirs):
+
+    jp2s = ["%s.jp2" % i for i in bands]
 
     saved_files_info = []
 
@@ -153,15 +155,33 @@ if __name__ == "__main__":
     parser.add_argument('--ground_truths_dir', help='directory containing ground truth parcels raster')
     parser.add_argument('--products_dir', help='directory containing downloaded sentinel products')
     parser.add_argument('--savedir', help='save directory to extract sentinel products windows')
+    parser.add_argument('--bands', default=None, help='which satellite image bands to use')
     parser.add_argument('--res', default=10, help='pixel size in meters')
     parser.add_argument('--sample_size', default=24, help='spatial resolution of dataset samples')
     parser.add_argument('--num_processes', default=4, help='number of parallel processes')
+    # ---------------------------------------------------------------------------------------------
+
     args = parser.parse_args()
+
     ground_truths_dir = args.ground_truths_dir
+
     products_dir = args.products_dir
+
     savedir = args.savedir
+    print("savedir: ", savedir)
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
+
+    bands = args.bands
+    if bands == 'None':
+        bands = list(mult.keys())
+    else:
+        bands = bands.split(',')
+
     res = int(args.res)
+
     sample_size = int(args.sample_size)
+
     num_processes = int(args.num_processes)
 
     main()

@@ -50,7 +50,4 @@ Pass one or more generated .csv files containing selected products to **download
 ```
 sh download/download.sh file1.csv,file2.csv,...
 ``` 
-he products will be downloaded in the parent directory of the first .csv file.
-
-## TODO
-- [] in get tiles file plot geo of tiles and aoi
+All products will be downloaded in the parent directory of the first .csv file.
