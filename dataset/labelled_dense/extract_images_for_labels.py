@@ -21,7 +21,6 @@ from utils.sentinel_products_utils import get_S2prod_info
 
 mult = {'B01': 1/6.,'B02': 1., 'B03': 1., 'B04': 1., 'B05': 1./2., 'B06': 1./2., 'B07': 1./2., 'B08': 1., 'B8A': 1./2,
         'B09': 1./6., 'B10': 1./6., 'B11': 1./2., 'B12': 1./2.}
-# jp2s = ["%s.jp2" % i for i in mult.keys()]
 
 
 def extract_images(imdirs):

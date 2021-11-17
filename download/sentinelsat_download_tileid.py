@@ -18,7 +18,7 @@ products_file = args.products_file
 # CODE -----------------------------------------------------------------------------------------------------------------
 # authentication
 cred = pd.read_csv("download/pw.csv", header=None)
-api = SentinelAPI(cred[0][0], cred[0][1], 'https://scihub.copernicus.eu/dhus')
+api = SentinelAPI(cred[0][0], cred[0][1], 'https://apihub.copernicus.eu/apihub')  # 'https://scihub.copernicus.eu/dhus')  #
 
 # read products to download from file
 if ',' in products_file:
@@ -43,7 +43,8 @@ for key in products2download:
 print("%d of %d new products already downloaded, %d remaining" % (N, len(products2download), len(products2download)-N))
 
 # download
-try:
-    api.download_all(products2download, directory_path=savedir, n_concurrent_dl=1)
-except:
-    print("waiting 30min...")
+# try:
+api.download_all(products2download, directory_path=savedir, n_concurrent_dl=1)
+# except:
+#     p
+print("waiting 30min...")

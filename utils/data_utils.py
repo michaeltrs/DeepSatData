@@ -2,10 +2,6 @@ import re
 import os
 import zipfile
 
-# dir_name = 'C:\\SomeDirectory'
-# extension = ".zip"
-#
-# os.chdir(dir_name) # change directory from working dir to dir with files
 
 def unzip_all(dir_name, extension=".zip"):
     for item in os.listdir(dir_name):

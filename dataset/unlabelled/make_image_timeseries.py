@@ -5,6 +5,7 @@ import argparse
 import pandas as pd
 import numpy as np
 import os
+import shutil
 import pickle
 from multiprocessing import Pool
 if __name__ == "__main__" and __package__ is None:
@@ -121,6 +122,10 @@ def main():
 
     paths = df['sample_path'].apply(lambda s: s[len(savedir)+1:])
     paths.to_csv(os.path.join(savedir, "data_paths.csv"), header=None, index=False)
+
+    # delete windows dir
+    shutil.rmtree(windows_dir)
+
 
 
 if __name__ == "__main__":

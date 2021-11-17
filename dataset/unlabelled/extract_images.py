@@ -98,10 +98,10 @@ def extract_images(imdirs):
                 saved_files_info.append(
                     [sample_save_path, Nij, Wij, Np, Wp, i, j, ip, jp, sample_size, sample_size, date, imdir, "ok"])
 
-    print('process finished')
     df = pd.DataFrame(data=saved_files_info,
                       columns=['sample_path', 'Nij', 'Wij', 'Np', 'Wp', 'il', 'jl', 'ip', 'jp',
                                'height', 'width', 'Date', 'S2_prod_imdir', "comment"])
+    # print('process finished')
     return df
 
 
@@ -121,10 +121,12 @@ def main():
         imdirs = products['path'].tolist()
 
         df_year = run_pool(imdirs, extract_images, num_processes)
+        # print('process finished 2')
 
         out.append(pd.concat(df_year))
+        # print('process finished 3')
 
-    print('pool finished')
+    # print('pool finished')
     df = pd.concat(out).reset_index(drop=True)
     df.to_csv(os.path.join(savedir, "extracted_windows_data_info.csv"), index=False)
 

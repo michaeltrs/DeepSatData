@@ -52,7 +52,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Extract polygons and ground truths from RPG data')
     parser.add_argument('--rpg-dir', type=str, help='Path to RPG directory')
     parser.add_argument('--epsg', default='2154', type=str, help='EPSG coordinate system for RPG data')
-    # rpg_file = '/media/michaeltrs/0a8a5a48-ede5-47d0-8eff-10d11350bf98/Satellite_Data/France/RPG_2-0__SHP_LAMB93_FR-2015_2015-01-01/RPG/1_DONNEES_LIVRAISON_2015/RPG_2-0_SHP_LAMB93_FR-2015/PARCELLES_GRAPHIQUES'
-    # epsg_in = '32631'
-
+    
     main()

@@ -29,7 +29,8 @@ If ground truth data are available we also include the following:
 ## Including ground truth data
 ### Make canonical .csv 
 If available, ground truth data are used in the form of a canonical .csv file containing the following columns:
-- ground_truth: (int) class id corresponding to polygon area
+- id: (int) object id corresponding to polygon area (optional, if not included a unique integer will be assigned)
+- ground_truth: (int) class corresponding to polygon area
 - crs: (int) geographic coordinate reference system
 - year: (int) the year the ground truth is valid for the given geometry
 - geometry: (str) shapely polygon or multipolygon  
@@ -49,7 +50,17 @@ python dataset/France_RPG/RPG2DF.py --rpg-dir <RPG files parent directory>
 ``` 
 
 ### Generate data
-Run the following bash script to generate data corresponding to spatial locations for which there are available ground 
+We distinguish between two different use cases:
+1. we overlay a grid of size equal to the desired sample_size on the AOI.
+For each grid square we make a raster of all ground truths and satellite images (timeseries) that fall into that square.
+The end result is a set of samples of size (sample_size X sample_size) each containing potentially multiple fields and 
+not necessarily whole fields as some will be cut at the image boundaries. (show examples) 
+2. for each object in the canonical .csv we create a raster ground truth image in which the object is centered and all other pixels not
+falling inside the polygon region are assigned the background class. We also generate satellite image timeseries as before. 
+This results in a single object per sample at the center of the image.
+  
+#### Use case 1
+For use case 1 run the following bash script to generate data corresponding to spatial locations for which there are available ground 
 truths in the form of parcel polygons. 
 ```shell
 sh dataset/labelled_dense/make_labelled_dataset.sh ground_truths_file=<1:ground_truths_file> products_dir=<2:products_dir> labels_dir=<3:labels_dir> windows_dir=<4:windows_dir> timeseries_dir=<5:timeseries_dir> 
@@ -65,6 +76,32 @@ where:
 - sample_size: number of pixels of final image windows (for highest resolution image band) and ground truths
 - num_processes: number of processes to run on parallel
 - bands: (list) which satellite image bands to use, e.g. 'B02,B03,B04,...'. If not specified all bands are used (optional) 
+
+#### Use case 2
+
+For use case 2 we first need to decide on the spatial dimensions of the samples. The following command finds the maximum N-S, E-W 
+distance for each parcel as well as the maximum of the two distances and also saves a cummulative histogram for these 
+dimensions. 
+```shell
+python dataset/labelled_dense/find_parcel_dimensions.py ground_truths_file=<1:ground_truths_file> products_dir=<2:products_dir> save_dir=<3:save_dir>
+```
+where:
+- ground_truths_file: file path for canonical .csv file as defined above
+- products_dir: directory path for downloaded Sentinel products
+- save_dir: directory to save output
+
+This information will help guide the decision on the sample size. We want most parcels to fit in the sample but not make 
+it larger than needed as this would mean wasting of computational resources. Of course other considerations may come into play.
+
+After deciding on the parcel size we run the following command to generate use case 2 data:
+
+```shell
+sh dataset/labelled_dense/make_labelled_parcel_dataset.sh ground_truths_file=<1:ground_truths_file> products_dir=<2:products_dir> labels_dir=<3:labels_dir> windows_dir=<4:windows_dir> timeseries_dir=<5:timeseries_dir> 
+res=<6:res> sample_size=<7:sample_size> Npoly=<8:Npoly> num_processes=<9:num_processes> bands=<10:bands (optional)>
+```
+```shell
+sh dataset/labelled_dense/make_labelled_parcel_dataset.sh ground_truths_file='/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18/example_parcels_in_AOI.csv' products_dir='/media/michaeltrs/0a8a5a48-ede5-47d0-8eff-10d11350bf98/Satellite_Data/Sentinel2/PSETAE_repl/2018/cloud_0_30' labels_dir='/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18_example/LABELS' windows_dir='/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18_example/IMAGES' timeseries_dir='/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18_example/TIMESERIES' res=10 sample_size=100 Npoly=50 num_processes=8
+```
 
 ## Without ground truth data
 In this case we only need to provide the directory where Sentinel products are downloaded. Optionally we can provide an 

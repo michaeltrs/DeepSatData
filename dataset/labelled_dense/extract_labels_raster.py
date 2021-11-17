@@ -10,7 +10,7 @@ if __name__ == "__main__" and __package__ is None:
     from os.path import dirname as dir
     path.insert(0, dir(dir(path[0])))
     __package__ = "examples"
-from utils.geospatial_data_utils import GeoTransform, get_points_from_str_poly
+from utils.geospatial_data_utils import GeoTransform, get_points_from_str_poly, closest_point_to_poly
 from utils.multiprocessing_utils import split_df
 from utils.sentinel_products_utils import get_S2prod_info
 
@@ -32,6 +32,7 @@ def is_valid(parcel_poly, pxmin, pymax):
 
 
 def extract_labels_raster(inputs):
+    # inputs = inputs[0]
     rank, geodata, anchor, dx, dy = inputs
 
     # arrays to save
@@ -40,10 +41,12 @@ def extract_labels_raster(inputs):
     AOI_masks = AOI_ids.copy()
     # additional/helper arrays
     AOI_ratios = AOI_ids.copy()
+    AOI_distances = AOI_ids.copy()
+    # AOI_alphas = AOI_ids.copy()
 
     invalid_shapes = []
     for ii in range(geodata.shape[0]):
-
+        # ii = 0
         print("process %d, parcel %d of %d" % (rank, ii+1, geodata.shape[0]))
         parcel_poly = geodata['geometry'][ii]
         label = geodata['ground_truth'][ii]
@@ -86,7 +89,7 @@ def extract_labels_raster(inputs):
         for i in range(H):
 
             for j in range(W):
-
+                # i = j = 15
                 try:
 
                     pix_points = [[pxmin + loc[0] * res, pymax - loc[1] * res] for loc in
@@ -113,17 +116,20 @@ def extract_labels_raster(inputs):
                         AOI_labels[row0 + i, col0 + j] = label
                         AOI_ratios[row0 + i, col0 + j] = value
                         AOI_ids[row0 + i, col0 + j] = id
+                        pix_center = np.array(pix_points)[:-1].mean(axis=0)
+                        AOI_distances[row0 + i, col0 + j] = closest_point_to_poly(
+                            np.array(parcel_poly.exterior.coords.xy).T, pix_center, return_dist=True)
 
                 except:
                     continue
 
-    return AOI_labels, AOI_ids, AOI_masks, AOI_ratios, pd.DataFrame(invalid_shapes)
+    return AOI_labels, AOI_ids, AOI_masks, AOI_ratios, AOI_distances, pd.DataFrame(invalid_shapes)
 
 
 def main():
     # ground truth data
     gt_df = pd.read_csv(ground_truths_file)
-    gt_df['id'] = range(1, gt_df.shape[0]+1)
+
     assert (gt_df['crs'] == gt_df['crs'].iloc[0]).all(), \
         "Polygons corresponding to multiple CRS were found in %s" % ground_truths_file
     crs = gt_df['crs'].iloc[0]
@@ -146,7 +152,7 @@ def main():
     # find all ground truth data that fall inside sentinel product
     prod_poly = geometry.Polygon([[prod_WN[0] + loc[0] * d[0], prod_WN[1] - loc[1] * d[1]] for loc in
                                   [[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]])
-    print(prod_poly)
+    # print(prod_poly)
     def f(x):
         try:
             x = get_points_from_str_poly(x)
@@ -183,6 +189,7 @@ def main():
     pool = Pool(num_processes)
 
     for year in years:
+        # year = years[0]
 
         geodata = gt_df[gt_df['year'] == year].reset_index(drop=True)
 
@@ -193,11 +200,14 @@ def main():
         AOI_ids = np.stack([out_[1] for out_ in outputs])
         AOI_masks = np.stack([out_[2] for out_ in outputs])
         AOI_ratios = np.stack([out_[3] for out_ in outputs])
-        invalid_shapes = pd.concat([out_[4] for out_ in outputs])
+        AOI_distances = np.stack([out_[4] for out_ in outputs])
+        invalid_shapes = pd.concat([out_[5] for out_ in outputs])
 
         labels = AOI_labels.max(axis=0)
         masks = AOI_masks.max(axis=0)
         ids = AOI_ids.sum(axis=0)
+        ratios = AOI_ratios.max(axis=0)
+        distances = AOI_distances.max(axis=0)
 
         locs = np.stack(np.where((AOI_labels > 0).sum(axis=0) > 1)).T
 
@@ -214,13 +224,19 @@ def main():
             idx = np.argmax(AOI_ratios[:, loc[0], loc[1]])
             labels[loc[0], loc[1]] = AOI_labels[idx, loc[0], loc[1]]
             ids[loc[0], loc[1]] = AOI_ids[idx, loc[0], loc[1]]
+            ratios[loc[0], loc[1]] = AOI_ratios[idx, loc[0], loc[1]]
+            distances[loc[0], loc[1]] = AOI_distances[idx, loc[0], loc[1]]
 
         np.savetxt("%s/LABELS_Y%s_N%s_W%s_R%d_CRS%s.csv" %
                    (savedir, str(year), str(maxy), str(minx), res, str(crs)), labels)
         np.savetxt("%s/IDS_Y%s_N%s_W%s_R%d_CRS%s.csv" %
-                   (savedir, str(year), str(maxy), str(int(maxx)), res, str(crs)), ids)
+                   (savedir, str(year), str(maxy), str(int(minx)), res, str(crs)), ids)
         np.savetxt("%s/MASKS_Y%s_N%s_W%s_R%d_CRS%s.csv" %
-                   (savedir, str(year), str(maxy), str(int(maxx)), res, str(crs)), masks)
+                   (savedir, str(year), str(maxy), str(int(minx)), res, str(crs)), masks)
+        np.savetxt("%s/RATIOS_Y%s_N%s_W%s_R%d_CRS%s.csv" %
+                   (savedir, str(year), str(maxy), str(int(minx)), res, str(crs)), ratios)
+        np.savetxt("%s/DISTANCES_Y%s_N%s_W%s_R%d_CRS%s.csv" %
+                   (savedir, str(year), str(maxy), str(int(minx)), res, str(crs)), distances)
         if invalid_shapes.shape[0] != 0:
             invalid_shapes.to_csv(
                 "%s/INVALID_Y%s_N%s_W%s_R%d_CRS%s.csv" %
@@ -253,6 +269,5 @@ if __name__ == "__main__":
     sample_size = int(args.sample_size)
 
     num_processes = int(args.num_processes)
-
 
     main()

@@ -10,3 +10,15 @@ pw.csv
 **/.ipynb_checkpoints
 run_many.sh
 
+# exclude superseded
+dataset/labelled_dense/SS
+download/SS
+
+# exclude files not tested/documented
+dataset/labelled_dense/extract_images_for_parcel_labels.py
+dataset/labelled_dense/extract_parcel_ground_truths.py
+dataset/labelled_dense/find_parcel_dimensions.py
+dataset/labelled_dense/make_image_timeseries_for_parcel_labels.py
+dataset/labelled_dense/make_labelled_parcel_dataset.sh
+
+

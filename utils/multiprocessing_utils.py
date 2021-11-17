@@ -16,13 +16,14 @@ def run_pool(x, f, num_cores, split=False):
 
 
 def split_num_segments(inlist, num_segments):
-    chunk_size = len(inlist) // num_segments
-    res = []
-    for i in range(num_segments):
-        if i == num_segments - 1:
-            res.append(inlist[i * chunk_size:])
+    res = [[] for _ in range(num_segments)]
+    i = 0
+    while len(inlist) > 0:
+        if i < num_segments:
+            res[i].append(inlist.pop())
         else:
-            res.append(inlist[i * chunk_size:(i + 1) * chunk_size])
+            res[i % num_segments].append(inlist.pop())
+        i += 1
     return res
 
 

@@ -23,11 +23,14 @@ mult = {'B01': 1/6., 'B02': 1., 'B03': 1., 'B04': 1., 'B05': 1./2., 'B06': 1./2.
 
 def match_labels_images(yearlocs):
 
-    refband = bands[0]
+    refband = bands[1]
 
     saved_files_info = []
-    for yearloc in yearlocs:
+    for jj, yearloc in enumerate(yearlocs):
 
+        if jj % 1000 == 0:
+            print("%d of %d" % (jj, len(yearlocs)))
+        # yearloc = yearlocs[2100]
         try:
 
             idx = yearloc_groups[yearloc]
@@ -35,32 +38,45 @@ def match_labels_images(yearlocs):
             data = data.drop_duplicates(subset=['DOY'], keep='first')  # some products downloaded twice
 
             Y = data['Year'].iloc[0]
-            N = data['Nij'].iloc[0]
-            W = data['Wij'].iloc[0]
-            il = data['il'].iloc[0]
-            jl = data['jl'].iloc[0]
+            N = data['Nl'].iloc[0]
+            W = data['Wl'].iloc[0]
+            # il = data['il'].iloc[0]
+            # jl = data['jl'].iloc[0]
 
             assert all(data['Year'] == Y)
-            assert all(data['Nij'] == N)
-            assert all(data['Wij'] == W)
-            assert all(data['il'] == il)
-            assert all(data['jl'] == jl)
+            assert all(data['Nl'] == N)
+            assert all(data['Wl'] == W)
+            # assert all(data['il'] == il)
+            # assert all(data['jl'] == jl)
 
             # timeseries_sample = {'B01': [], 'B02': [], 'B03': [], 'B04': [], 'B05': [], 'B06': [], 'B07': [],
             #                      'B08': [], 'B8A': [], 'B09': [], 'B10': [], 'B11': [], 'B12': [], 'doy': []}
             timeseries_sample = {band: [] for band in bands}
             timeseries_sample['doy'] = []
             for sample_info in data[['sample_path', 'DOY']].values:
-
+                # sample_info = data[['sample_path', 'DOY']].values[0]
                 impath, doy = sample_info
 
                 with open(impath, 'rb') as handle:
                     sample = pickle.load(handle, encoding='latin1')
 
+                # image falls in black region for this product (should have been excluded in extract_images_for_parcel_labels.py)
+                if sample[refband].sum() == 0:
+                    # print('zero sum')
+                    continue
+
+                # image does not match required size (should have been excluded in extract_images_for_parcel_labels.py)
+                height, width = sample[refband].shape
+                if (height != sample_size) or (width != sample_size):
+                    # print('unequal size')
+                    continue
+
+                # for key in ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B10', 'B11', 'B12']:
                 for key in bands:
                     timeseries_sample[key].append(sample[key])
                 timeseries_sample['doy'].append(np.array(doy))
 
+            # for key in ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B10', 'B11', 'B12', 'doy']:
             for key in bands:
                 timeseries_sample[key] = np.stack(timeseries_sample[key])
             timeseries_sample['doy'] = np.stack(timeseries_sample['doy'])
@@ -68,22 +84,24 @@ def match_labels_images(yearlocs):
 
             timesteps = timeseries_sample[refband].shape[0]
 
+            gt = saved_gt_info[(saved_gt_info['Ntl'] == yearloc[0]) & (saved_gt_info['Wtl'] == yearloc[1])]
+            with open(gt['filepath'].values[0], 'rb') as handle:
+                labels = pickle.load(handle, encoding='latin1')
             for ltype in labels.keys():
-                timeseries_sample[ltype.lower()] = \
-                    labels[ltype][il * sample_size: (il + 1) * sample_size, jl * sample_size: (jl + 1) * sample_size]
+                timeseries_sample[ltype.lower()] = labels[ltype]
 
             savename = os.path.join(year_savedir, "%d_%d_%s.pickle" % (int(N), int(W), Y))
             with open(savename, 'wb') as handle:
                 pickle.dump(timeseries_sample, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-            saved_files_info.append([savename, Y, N, W, sample_size, sample_size, timesteps, il, jl, "completed"])
+            saved_files_info.append([savename, Y, N, W, sample_size, sample_size, timesteps, "completed"])
 
         except:
 
-            saved_files_info.append(["", Y, N, W, sample_size, sample_size, 0, il, jl, "failed"])
+            saved_files_info.append(["", Y, N, W, sample_size, sample_size, 0, "failed"])
 
     saved_files_info = pd.DataFrame(data=saved_files_info, columns=['sample_path', 'Year', 'N', 'W', 'dy', 'dx', 'dt',
-                                                                    'label_win_i', 'label_win_j', 'status'])
+                                                                    'status'])
     return saved_files_info
 
 
@@ -93,6 +111,7 @@ def main():
     global iminfo
     global labels
     global year_savedir
+    global saved_gt_info
 
     iminfo = pd.read_csv(os.path.join(windows_dir, "extracted_windows_data_info.csv"))
     crs = iminfo['crs'].iloc[0]
@@ -103,28 +122,32 @@ def main():
     iminfo['Year'] = iminfo['Date'].apply(lambda s: str(s)[:4])
 
     # ground truths
-    gtfiles = os.listdir(ground_truths_dir)
-    years = [find_number(s, "Y") for s in gtfiles]
-    files = {year: {} for year in set(years)}
-    for i, file in enumerate(gtfiles):
-        if not file.startswith('INVALID'):
-            files[years[i]][file.split("_")[0]] = file
-    print("found ground truths in raster for years %s" % ", ".join(list(files.keys())))
+    # gtinfo = pd.read_csv(os.path.join(windows_dir, "extracted_windows_data_info.csv"))
+    #
+    # gtfiles = os.listdir(ground_truths_dir)
+    # years = [find_number(s, "Y") for s in gtfiles]
+    # files = {year: {} for year in set(years)}
+    # for i, file in enumerate(gtfiles):
+    #     if not file.startswith('INVALID'):
+    #         files[years[i]][file.split("_")[0]] = file
+    # print("found ground truths in raster for years %s" % ", ".join(list(files.keys())))
+    gtfiles = [f for f in os.listdir(ground_truths_dir) if os.path.isdir(os.path.join(ground_truths_dir, f))]
 
     saved_files_info = []
 
-    for year in set(years):
+    for gtfile in gtfiles:
+        # gtfile = gtfiles[0]
+
+        saved_gt_info = pd.read_csv(os.path.join(ground_truths_dir, gtfile, 'saved_data_info.csv'))
+
+        year = find_number(gtfile, "Y")
+        CRSl = find_number(gtfile, "CRS")
 
         year_savedir = os.path.join(savedir, year)
         if not os.path.isdir(year_savedir):
             os.makedirs(year_savedir)
 
-        labels = {}
-        for ltype in files[year]:
-
-            labels[ltype] = np.loadtxt(os.path.join(ground_truths_dir, files[year][ltype]), dtype=np.float32)
-
-        yearloc_groups = iminfo[iminfo['Year'] == year].groupby(['Nij', 'Wij'], as_index=False).groups
+        yearloc_groups = iminfo[iminfo['Year'] == year].groupby(['Nl', 'Wl'], as_index=False).groups
         yearlocs = list(yearloc_groups.keys())
 
         df = run_pool(yearlocs, match_labels_images, num_processes)
@@ -138,7 +161,7 @@ def main():
     df.to_csv(os.path.join(savedir, "saved_timeseries_data_info.csv"), index=False)
 
     # delete windows dir
-    shutil.rmtree(windows_dir)
+    # shutil.rmtree(windows_dir)
 
 
 if __name__ == "__main__":
@@ -173,9 +196,31 @@ if __name__ == "__main__":
     num_processes = int(args.num_processes)
 
     bands = args.bands
+
     if bands == 'None':
         bands = list(mult.keys())
     else:
         bands = bands.split(',')
 
     main()
+
+
+    # ground_truths_dir = '/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18_3/LABELS'
+    # products_dir = '/media/michaeltrs/0a8a5a48-ede5-47d0-8eff-10d11350bf98/Satellite_Data/Sentinel2/PSETAE_repl/2018/cloud_0_30'
+    # windows_dir = '/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18_3/IMAGES'
+    # savedir = '/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18_3/TIMESERIES'
+    # if not os.path.exists(savedir):
+    #     os.makedirs(savedir)
+    #
+    # res = 10
+    # sample_size = 100
+    # num_processes = 16
+    # bands = 'None'
+    #
+    #
+    # if bands == 'None':
+    #     bands = list(mult.keys())
+    # else:
+    #     bands = bands.split(',')
+    #
+    # main()
