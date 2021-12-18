@@ -30,7 +30,6 @@ def match_labels_images(yearlocs):
 
         if jj % 1000 == 0:
             print("%d of %d" % (jj, len(yearlocs)))
-        # yearloc = yearlocs[2100]
         try:
 
             idx = yearloc_groups[yearloc]
@@ -40,21 +39,14 @@ def match_labels_images(yearlocs):
             Y = data['Year'].iloc[0]
             N = data['Nl'].iloc[0]
             W = data['Wl'].iloc[0]
-            # il = data['il'].iloc[0]
-            # jl = data['jl'].iloc[0]
 
             assert all(data['Year'] == Y)
             assert all(data['Nl'] == N)
             assert all(data['Wl'] == W)
-            # assert all(data['il'] == il)
-            # assert all(data['jl'] == jl)
 
-            # timeseries_sample = {'B01': [], 'B02': [], 'B03': [], 'B04': [], 'B05': [], 'B06': [], 'B07': [],
-            #                      'B08': [], 'B8A': [], 'B09': [], 'B10': [], 'B11': [], 'B12': [], 'doy': []}
             timeseries_sample = {band: [] for band in bands}
             timeseries_sample['doy'] = []
             for sample_info in data[['sample_path', 'DOY']].values:
-                # sample_info = data[['sample_path', 'DOY']].values[0]
                 impath, doy = sample_info
 
                 with open(impath, 'rb') as handle:
@@ -71,12 +63,10 @@ def match_labels_images(yearlocs):
                     # print('unequal size')
                     continue
 
-                # for key in ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B10', 'B11', 'B12']:
                 for key in bands:
                     timeseries_sample[key].append(sample[key])
                 timeseries_sample['doy'].append(np.array(doy))
 
-            # for key in ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B10', 'B11', 'B12', 'doy']:
             for key in bands:
                 timeseries_sample[key] = np.stack(timeseries_sample[key])
             timeseries_sample['doy'] = np.stack(timeseries_sample['doy'])
@@ -122,15 +112,6 @@ def main():
     iminfo['Year'] = iminfo['Date'].apply(lambda s: str(s)[:4])
 
     # ground truths
-    # gtinfo = pd.read_csv(os.path.join(windows_dir, "extracted_windows_data_info.csv"))
-    #
-    # gtfiles = os.listdir(ground_truths_dir)
-    # years = [find_number(s, "Y") for s in gtfiles]
-    # files = {year: {} for year in set(years)}
-    # for i, file in enumerate(gtfiles):
-    #     if not file.startswith('INVALID'):
-    #         files[years[i]][file.split("_")[0]] = file
-    # print("found ground truths in raster for years %s" % ", ".join(list(files.keys())))
     gtfiles = [f for f in os.listdir(ground_truths_dir) if os.path.isdir(os.path.join(ground_truths_dir, f))]
 
     saved_files_info = []
@@ -141,7 +122,7 @@ def main():
         saved_gt_info = pd.read_csv(os.path.join(ground_truths_dir, gtfile, 'saved_data_info.csv'))
 
         year = find_number(gtfile, "Y")
-        CRSl = find_number(gtfile, "CRS")
+        # CRSl = find_number(gtfile, "CRS")
 
         year_savedir = os.path.join(savedir, year)
         if not os.path.isdir(year_savedir):
@@ -161,7 +142,7 @@ def main():
     df.to_csv(os.path.join(savedir, "saved_timeseries_data_info.csv"), index=False)
 
     # delete windows dir
-    # shutil.rmtree(windows_dir)
+    shutil.rmtree(windows_dir)
 
 
 if __name__ == "__main__":
@@ -189,7 +170,8 @@ if __name__ == "__main__":
     if not os.path.exists(savedir):
         os.makedirs(savedir)
 
-    res = int(args.res)
+    # res = int(args.res)
+    res = float(args.res)
 
     sample_size = int(args.sample_size)
 
@@ -203,24 +185,3 @@ if __name__ == "__main__":
         bands = bands.split(',')
 
     main()
-
-
-    # ground_truths_dir = '/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18_3/LABELS'
-    # products_dir = '/media/michaeltrs/0a8a5a48-ede5-47d0-8eff-10d11350bf98/Satellite_Data/Sentinel2/PSETAE_repl/2018/cloud_0_30'
-    # windows_dir = '/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18_3/IMAGES'
-    # savedir = '/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18_3/TIMESERIES'
-    # if not os.path.exists(savedir):
-    #     os.makedirs(savedir)
-    #
-    # res = 10
-    # sample_size = 100
-    # num_processes = 16
-    # bands = 'None'
-    #
-    #
-    # if bands == 'None':
-    #     bands = list(mult.keys())
-    # else:
-    #     bands = bands.split(',')
-    #
-    # main()

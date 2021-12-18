@@ -19,7 +19,7 @@ from utils.multiprocessing_utils import run_pool
 from utils.sentinel_products_utils import get_S2prod_info
 
 
-mult = {'B01': 1/6.,'B02': 1., 'B03': 1., 'B04': 1., 'B05': 1./2., 'B06': 1./2., 'B07': 1./2., 'B08': 1., 'B8A': 1./2,
+mult = {'B01': 1/6., 'B02': 1., 'B03': 1., 'B04': 1., 'B05': 1./2., 'B06': 1./2., 'B07': 1./2., 'B08': 1., 'B8A': 1./2,
         'B09': 1./6., 'B10': 1./6., 'B11': 1./2., 'B12': 1./2.}
 
 
@@ -30,7 +30,6 @@ def extract_images(imdirs):
     saved_files_info = []
 
     for ii, imdir in enumerate(imdirs):
-        # ii, imdir = 1, imdirs[1]
 
         print("unfolding product %d of %d" % (ii, len(imdirs)))
 
@@ -42,12 +41,6 @@ def extract_images(imdirs):
             with rasterio.open("%s/%s_%s" % (imdir, imname, jp2)) as f:
                 data[jp2[:-4]] = f.read(1)
 
-        # if str(f.crs).split(':')[1] != CRSl:
-            # geotransform_prod2label = GeoTransform(str(f.crs).split(':')[1], CRSl, loc2loc=CRSl != '4326')
-            # geotransform_label2prod = GeoTransform(CRSl, str(f.crs).split(':')[1], loc2loc=CRSl != '4326')
-            # Wp, Np = geotransform_prod2label(np.array(f.transform)[2], np.array(f.transform)[5])
-        # else:
-        #     Wp, Np = np.array(f.transform)[2], np.array(f.transform)[5]
         geotransform_label2prod = GeoTransform(CRSl, str(f.crs).split(':')[1], loc2loc=CRSl != '4326')
         Wp, Np = np.array(f.transform)[2], np.array(f.transform)[5]
 
@@ -55,27 +48,14 @@ def extract_images(imdirs):
         if not os.path.exists(prod_savedir):
             os.makedirs(prod_savedir)
 
-        # saved_gt_info[saved_gt_info['Ntl']==saved_gt_info['Ntl'].max()]
         for i in range(saved_gt_info.shape[0]):
-            # i = 3600
-            # i = 4500
-            # i = 4000
 
             Nl = saved_gt_info.iloc[i]['Ntl']
             Wl = saved_gt_info.iloc[i]['Wtl']
             Wlp, Nlp = geotransform_label2prod(Wl, Nl)
 
-            # ip = int((Np - Nl) / res) # + 2
-            # jp = int((Wl - Wp) / res) # + 2
-            ip = int(np.round((Np - Nlp) / res))  # + 2
-            jp = int(np.round((Wlp - Wp) / res)) # + 2
-
-            # # sample outside Sentinel product
-            # if (ip < 0) or (jp < 0):
-            #     saved_files_info.append(
-            #         [None, Nl, Wl, Np, Wp, ip, jp, sample_size, sample_size, date, imdir,
-            #          "sample outside Sentinel product"])
-            #     continue
+            ip = int(np.round((Np - Nlp) / 10.))
+            jp = int(np.round((Wlp - Wp) / 10.))
 
             date = imdir.split("/")[-4].split(".")[0].split("_")[2][:8]
 
@@ -91,26 +71,6 @@ def extract_images(imdirs):
                 saved_files_info.append(
                     ["", Nlp, Wlp, Nl, Wl, Np, Wp, ip, jp, sample_size, sample_size, date, imdir, "no image"])
                 continue
-
-            # import matplotlib.pyplot as plt
-            #
-            #
-            # with open(saved_gt_info.iloc[i]['filepath'], 'rb') as handle:
-            #     labels = pickle.load(handle)  # , protocol=pickle.HIGHEST_PROTOCOL)plt.figure()
-            #
-            # print(ip, jp)
-            #
-            #
-            # plt.figure()
-            # plt.imshow(sample['B03'])
-            # plt.imshow(labels['ratios'], alpha=0.6)
-
-            # # plt.figure()
-            # # plt.imshow(labels['ratios'])
-            # ij = np.array([[3534, 10068], [3582, 10746], [9828, 3456]])
-            # l = np.array([[63, 65], [43, 58], [47, 66]])
-            # im = np.array([[63, 70], [45, 65], [55, 68.5]])
-            # im - l
 
             sample_save_path = "%s/N%d_W%d_D%s_CRS%s.pickle" % (prod_savedir, int(Nl), int(Wl), date, CRSl)
             with open(sample_save_path, 'wb') as handle:
@@ -128,20 +88,9 @@ def extract_images(imdirs):
 def main():
     # ground truths
     gtdirs = [f for f in os.listdir(ground_truths_dir) if os.path.isdir(os.path.join(ground_truths_dir, f))]
-    # years = [find_number(s, "Y") for s in gtfiles]
-    # files = {year: {} for year in set(years)}
-    # for i, file in enumerate(gtfiles):
-    #     if not file.startswith('INVALID'):
-    #         files[years[i]][file.split("_")[0]] = file
-    # print("found ground truths for years %s" % ", ".join(list(files.keys())))
-    # global labels
-    # global Nl
-    # global Wl
+
     global CRSl
     global saved_gt_info
-
-    # global num_rows
-    # global num_cols
 
     # sentinel products
     imdirs = glob("%s/*.SAFE/GRANULE/**/IMG_DATA" % products_dir)
@@ -150,16 +99,8 @@ def main():
 
     out = []
     for gtdir in gtdirs:
-        # gtdir = gtdirs[0]
 
-        # # ground truths
-        # labels = np.loadtxt(os.path.join(ground_truths_dir, files[year]['LABELS']), dtype=np.float32)
-        # Nl = int(find_number(files[year]['LABELS'], "N"))
-        # Wl = int(find_number(files[year]['LABELS'], "W"))
-        #
-        # num_rows, num_cols = [d / sample_size for d in labels.shape]
-        # assert (np.ceil(num_rows) == num_rows) and (np.ceil(num_cols) == num_cols), \
-        # "sample size should be fitting exactly in labels, this suggests an error in extract_labels_raster script"
+        # ground truths
         saved_gt_info = pd.read_csv(os.path.join(ground_truths_dir, gtdir, 'saved_data_info.csv'))
 
         year = find_number(gtdir, "Y")
@@ -170,7 +111,7 @@ def main():
         imdirs = products['path'].tolist()
 
         df_year = run_pool(imdirs, extract_images, num_processes)
-        # df = extract_images([imdirs[0]])
+
         out.append(pd.concat(df_year))
 
     df = pd.concat(out).reset_index(drop=True)
@@ -207,25 +148,11 @@ if __name__ == "__main__":
     else:
         bands = bands.split(',')
 
-    res = int(args.res)
+    # res = int(args.res)
+    res = float(args.res)
 
     sample_size = int(args.sample_size)
 
     num_processes = int(args.num_processes)
 
     main()
-
-    #
-    # ground_truths_dir = '/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18_3/LABELS'
-    # products_dir = '/media/michaeltrs/0a8a5a48-ede5-47d0-8eff-10d11350bf98/Satellite_Data/Sentinel2/PSETAE_repl/2018/cloud_0_30'
-    # savedir = '/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18_3/IMAGES'
-    # bands = 'None'
-    # if bands == 'None':
-    #     bands = list(mult.keys())
-    # else:
-    #     bands = bands.split(',')
-    # res = 10
-    # sample_size = 100
-    # num_processes = 10
-    #
-    # main()

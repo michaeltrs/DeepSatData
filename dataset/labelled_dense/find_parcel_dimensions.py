@@ -122,32 +122,26 @@ def main():
 
 if __name__ == "__main__":
 
-    # parser = argparse.ArgumentParser(description='Make raster from shapely polygons')
-    # parser.add_argument('--ground_truths_file', help='filename containing ground truth parcel polygons')
-    # parser.add_argument('--products_dir', help='directory containing sentinel products')
-    # parser.add_argument('--save_dir', help='save directory to extract ground truths in raster mode')
-    # # parser.add_argument('--cutoff', default=None, help='max allowed parcel size. If None to script will save a cumsum '
-    # #                                                    'histogram to help decide the max alloed size')
-    # # parser.add_argument('--sample_size', default=24, help='spatial resolution of dataset samples')
-    # # parser.add_argument('--num_processes', default=4, help='number of parallel processes')
-    #
-    # args = parser.parse_args()
-    #
-    # ground_truths_file = args.ground_truths_file
-    #
-    # products_dir = args.products_dir
-    #
-    # save_dir = args.save_dir
-    # print("save_dir: ", save_dir)
-    # if not os.path.exists(save_dir):
-    #     os.makedirs(save_dir)
-    #
-    # # cutoff = int(args.cutoff)
-    #
-    # main()
+    parser = argparse.ArgumentParser(description='Make raster from shapely polygons')
+    parser.add_argument('--ground_truths_file', help='filename containing ground truth parcel polygons')
+    parser.add_argument('--products_dir', help='directory containing sentinel products')
+    parser.add_argument('--save_dir', help='save directory to extract ground truths in raster mode')
+    # parser.add_argument('--cutoff', default=None, help='max allowed parcel size. If None to script will save a cumsum '
+    #                                                    'histogram to help decide the max alloed size')
+    # parser.add_argument('--sample_size', default=24, help='spatial resolution of dataset samples')
+    # parser.add_argument('--num_processes', default=4, help='number of parallel processes')
 
-    ground_truths_file = '/media/michaeltrs/0a8a5a48-ede5-47d0-8eff-10d11350bf98/Satellite_Data/Sentinel2/PSETAE_repl/parcels_canon.csv'
-    # '/media/michaeltrs/0a8a5a48-ede5-47d0-8eff-10d11350bf98/Satellite_Data/Sentinel2/PSETAE_repl/parcels_in_aoi.csv'
-    products_dir = '/media/michaeltrs/0a8a5a48-ede5-47d0-8eff-10d11350bf98/Satellite_Data/Sentinel2/PSETAE_repl/2018/cloud_0_30'
-    save_dir = '/media/michaeltrs/sdb/HD2/Data/Satellite_Imagery/RPG/T31FM_18_2'
-    # main()
+    args = parser.parse_args()
+
+    ground_truths_file = args.ground_truths_file
+
+    products_dir = args.products_dir
+
+    save_dir = args.save_dir
+    print("save_dir: ", save_dir)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    # cutoff = int(args.cutoff)
+
+    main()

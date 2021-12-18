@@ -127,15 +127,19 @@ def extract_labels_raster(inputs):
 
 
 def main():
-    # ground truth data
+    # read ground truth data
     gt_df = pd.read_csv(ground_truths_file)
 
+    # ensure all polygons use the same crs
     assert (gt_df['crs'] == gt_df['crs'].iloc[0]).all(), \
         "Polygons corresponding to multiple CRS were found in %s" % ground_truths_file
     crs = gt_df['crs'].iloc[0]
-    yearly_grouped_gt = gt_df.groupby('year')
-    years = list(yearly_grouped_gt.groups.keys())
+
+    # find unique years
+    years = gt_df['year'].drop_duplicates().to_list()
     print("found ground truth data for years %s" % ", ".join([str(i) for i in years]))
+
+    # 0 class will indicate background, if 0 class already exists in labels add one
     if 0 in gt_df['ground_truth'].drop_duplicates():
         gt_df['ground_truth'] += 1
 
@@ -152,7 +156,7 @@ def main():
     # find all ground truth data that fall inside sentinel product
     prod_poly = geometry.Polygon([[prod_WN[0] + loc[0] * d[0], prod_WN[1] - loc[1] * d[1]] for loc in
                                   [[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]])
-    # print(prod_poly)
+
     def f(x):
         try:
             x = get_points_from_str_poly(x)
@@ -170,17 +174,19 @@ def main():
     gt_df = gt_df[gt_df['inratio'] == 1.0]
     print("found %d polygons inside sentinel tile" % gt_df.shape[0])
 
-    maxy = int(np.ceil(gt_df['N'].max()))   # N
-    miny = int(np.floor(gt_df['S'].min()))  # S!
-    maxx = int(np.ceil(gt_df['E'].max()))   # E!
-    minx = int(np.floor(gt_df['W'].min()))  # W
+    # increasing AOI size will allow extracting the parcels at the boundary of the true AOI placed at the center of the
+    # image. This shouldnt make a difference when splitting the AOI by grid a slabels will be zero in these locations
+    maxy = int(np.ceil(gt_df['N'].max())) + res * sample_size   # N
+    miny = int(np.floor(gt_df['S'].min())) - res * sample_size  # S!
+    maxx = int(np.ceil(gt_df['E'].max())) + res * sample_size   # E!
+    minx = int(np.floor(gt_df['W'].min())) - res * sample_size  # W
 
     # increase AOI dimensions to match integer multiple of sample size
-    if np.ceil((maxy - miny) / (sample_size * res)) != (maxy - miny) / (sample_size * res):
-        dy = (np.ceil((maxy - miny) / (sample_size * res)) - (maxy - miny) / (sample_size * res)) * (sample_size * res)
+    if np.ceil((maxy - miny) / (sample_size * 10)) != (maxy - miny) / (sample_size * 10):
+        dy = (np.ceil((maxy - miny) / (sample_size * 10)) - (maxy - miny) / (sample_size * 10)) * (sample_size * 10)
         miny = miny - dy
-    if np.ceil((maxx - minx) / (sample_size * res)) != (maxx - minx) / (sample_size * res):
-        dx = (np.ceil((maxx - minx) / (sample_size * res)) - (maxx - minx) / (sample_size * res)) * (sample_size * res)
+    if np.ceil((maxx - minx) / (sample_size * 10)) != (maxx - minx) / (sample_size * 10):
+        dx = (np.ceil((maxx - minx) / (sample_size * 10)) - (maxx - minx) / (sample_size * 10)) * (sample_size * 10)
         maxx = maxx + dx
     dx = maxx - minx
     dy = maxy - miny
@@ -228,19 +234,21 @@ def main():
             distances[loc[0], loc[1]] = AOI_distances[idx, loc[0], loc[1]]
 
         np.savetxt("%s/LABELS_Y%s_N%s_W%s_R%d_CRS%s.csv" %
-                   (savedir, str(year), str(maxy), str(minx), res, str(crs)), labels)
+                   (savedir, str(year), str(int(maxy)), str(int(minx)), res, str(crs)), labels)
         np.savetxt("%s/IDS_Y%s_N%s_W%s_R%d_CRS%s.csv" %
-                   (savedir, str(year), str(maxy), str(int(minx)), res, str(crs)), ids)
+                   (savedir, str(year), str(int(maxy)), str(int(minx)), res, str(crs)), ids)
         np.savetxt("%s/MASKS_Y%s_N%s_W%s_R%d_CRS%s.csv" %
-                   (savedir, str(year), str(maxy), str(int(minx)), res, str(crs)), masks)
+                   (savedir, str(year), str(int(maxy)), str(int(minx)), res, str(crs)), masks)
         np.savetxt("%s/RATIOS_Y%s_N%s_W%s_R%d_CRS%s.csv" %
-                   (savedir, str(year), str(maxy), str(int(minx)), res, str(crs)), ratios)
+                   (savedir, str(year), str(int(maxy)), str(int(minx)), res, str(crs)), ratios)
         np.savetxt("%s/DISTANCES_Y%s_N%s_W%s_R%d_CRS%s.csv" %
-                   (savedir, str(year), str(maxy), str(int(minx)), res, str(crs)), distances)
+                   (savedir, str(year), str(int(maxy)), str(int(minx)), res, str(crs)), distances)
+
         if invalid_shapes.shape[0] != 0:
             invalid_shapes.to_csv(
                 "%s/INVALID_Y%s_N%s_W%s_R%d_CRS%s.csv" %
                 (savedir, str(year), str(maxy), str(int(maxx)), res, str(crs)), index=False)
+
 
 
 if __name__ == "__main__":
@@ -250,7 +258,7 @@ if __name__ == "__main__":
     parser.add_argument('--products_dir', help='directory containing sentinel products')
     parser.add_argument('--savedir', help='save directory to extract ground truths in raster mode')
     parser.add_argument('--res', default=10, help='pixel size in meters')
-    parser.add_argument('--sample_size', default=24, help='spatial resolution of dataset samples')
+    parser.add_argument('--sample_size', default=24, help='spatial resolution of dataset image samples')
     parser.add_argument('--num_processes', default=4, help='number of parallel processes')
 
     args = parser.parse_args()
@@ -264,7 +272,8 @@ if __name__ == "__main__":
     if not os.path.exists(savedir):
         os.makedirs(savedir)
 
-    res = int(args.res)
+    res = float(args.res)
+    assert np.ceil(10. / res) == 10. / res, "Label pixel size should divide min satellite pixel size (10m), but %.1f was selected" % res
 
     sample_size = int(args.sample_size)
 

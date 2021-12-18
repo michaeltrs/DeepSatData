@@ -46,8 +46,6 @@ def match_labels_images(yearlocs):
             assert all(data['il'] == il)
             assert all(data['jl'] == jl)
 
-            # timeseries_sample = {'B01': [], 'B02': [], 'B03': [], 'B04': [], 'B05': [], 'B06': [], 'B07': [],
-            #                      'B08': [], 'B8A': [], 'B09': [], 'B10': [], 'B11': [], 'B12': [], 'doy': []}
             timeseries_sample = {band: [] for band in bands}
             timeseries_sample['doy'] = []
             for sample_info in data[['sample_path', 'DOY']].values:
@@ -70,7 +68,7 @@ def match_labels_images(yearlocs):
 
             for ltype in labels.keys():
                 timeseries_sample[ltype.lower()] = \
-                    labels[ltype][il * sample_size: (il + 1) * sample_size, jl * sample_size: (jl + 1) * sample_size]
+                    labels[ltype][il * label_mult * sample_size: (il + 1) * label_mult * sample_size, jl * label_mult * sample_size: (jl + 1) * label_mult * sample_size]
 
             savename = os.path.join(year_savedir, "%d_%d_%s.pickle" % (int(N), int(W), Y))
             with open(savename, 'wb') as handle:
@@ -93,7 +91,12 @@ def main():
     global iminfo
     global labels
     global year_savedir
+    global label_mult
 
+    # ratio of image to label pixel size
+    label_mult = int(10 / res)
+
+    # read info on extracted image windows
     iminfo = pd.read_csv(os.path.join(windows_dir, "extracted_windows_data_info.csv"))
     crs = iminfo['crs'].iloc[0]
 
@@ -132,12 +135,11 @@ def main():
 
         saved_files_info.append(df)
 
-
     df = pd.concat(saved_files_info).reset_index(drop=True)
     df['crs'] = crs
     df.to_csv(os.path.join(savedir, "saved_timeseries_data_info.csv"), index=False)
 
-    # delete windows dir
+    # delete previously saved image windows
     shutil.rmtree(windows_dir)
 
 
@@ -166,7 +168,8 @@ if __name__ == "__main__":
     if not os.path.exists(savedir):
         os.makedirs(savedir)
 
-    res = int(args.res)
+    res = float(args.res)
+    assert np.ceil(10. / res) == 10. / res, "Label pixel size should divide min satellite pixel size (10m), but %.1f was selected" % res
 
     sample_size = int(args.sample_size)
 
@@ -179,3 +182,4 @@ if __name__ == "__main__":
         bands = bands.split(',')
 
     main()
+
