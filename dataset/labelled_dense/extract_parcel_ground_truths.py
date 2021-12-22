@@ -141,7 +141,7 @@ def extract_parcel_labels_raster(inputs):
         labels2d = raster['LABELS'][idxN: idxN + label_mult * sample_size, idxW: idxW + label_mult * sample_size]
         ids2d = raster['IDS'][idxN: idxN + label_mult * sample_size, idxW: idxW + label_mult * sample_size]
         masks2d = raster['MASKS'][idxN: idxN + label_mult * sample_size, idxW: idxW + label_mult * sample_size]
-        distances2d = raster['DISTANCES'][idxN: idxN + sample_size, idxW: idxW + label_mult * sample_size]
+        distances2d = raster['DISTANCES'][idxN: idxN + label_mult * sample_size, idxW: idxW + label_mult * sample_size]
         ratios2d = raster['RATIOS'][idxN: idxN + label_mult * sample_size, idxW: idxW + label_mult * sample_size]
 
         # add simpilied polygons
