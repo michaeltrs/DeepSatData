@@ -140,7 +140,7 @@ def main():
     print("found ground truth data for years %s" % ", ".join([str(i) for i in years]))
 
     # 0 class will indicate background, if 0 class already exists in labels add one
-    if 0 in gt_df['ground_truth'].drop_duplicates():
+    if 0 in gt_df['ground_truth'].drop_duplicates().tolist():
         gt_df['ground_truth'] += 1
 
     # sentinel products
