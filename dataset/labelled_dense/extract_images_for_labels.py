@@ -91,6 +91,10 @@ def extract_images(imdirs):
                     sample[jp2[:-4]] = data[jp2[:-4]][xpmin: xpmin + int(mult[jp2[:-4]] * sample_size),
                                        ypmin: ypmin + int(mult[jp2[:-4]] * sample_size)]
 
+                # assert all images are square, intended to catch images at the edge of a product
+                if any([sample[k].shape[0] != sample[k].shape[1] for k in sample.keys()]):
+                    continue
+
                 # exception: image is all zero for this location
                 if sample[jp2[:-4]].sum() == 0:
                     saved_files_info.append(
